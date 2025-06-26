@@ -1,0 +1,14 @@
+# Paste this code to /etc/systemd/system/facer-rgb.service to automate RGB lights on startup
+
+[Unit]
+Description=Enable RGB on Acer Predator keyboard
+After=multi-user.target
+
+[Service]
+Type=oneshot
+Environment=HOME=/home/apex
+ExecStart=/usr/bin/python3 /opt/turbo-fan/facer_rgb.py -load wavy
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

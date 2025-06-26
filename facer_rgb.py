@@ -29,41 +29,41 @@ parser = argparse.ArgumentParser(description=f"""Interacts with experimental Ace
 
 -s [speed]
     Animation Speed:
-    
+
     0 -> No animation speed (static)
     1 -> Slowest animation speed
     9 -> Fastest animation speed
-    
+
     You can use values between 1-9 to adjust the speed, or increase speed even more than 255, but keep in mind
     that values higher than 9 were not used in official PredatorSense application.
 
 -b [brightness]
     Keyboard backlight Brightness:
-    
+
     0   -> No backlight (turned off)
     100 -> Maximum backlight brightness
-    
+
 -d [direction]
     Animation direction:
-    
+
     1   -> Right to Left
     2   -> Left to Right
 
 -cR [red value]
     Some modes require specific [R]GB color
-    
+
     0   -> Minimum red range
     255 -> Maximum red range
 
 -cG [green value]
     Some modes require specific R[G]B color
-    
+
     0   -> Minimum green range
     255 -> Maximum green range
 
 -cB [blue value]
     Some modes require specific RG[B] color
-    
+
     0   -> Minimum blue range
     255 -> Maximum blue range
 
@@ -141,6 +141,11 @@ parser.add_argument('-cB',
                     dest='blue',
                     default=50)
 
+parser.add_argument('--all-zones',
+                    action='store_true',
+                    help='Apply static color to all 4 zones')
+
+
 parser.add_argument('-save')
 
 parser.add_argument('-load')
@@ -169,23 +174,32 @@ if args.save:
 
 if args.mode == 0:
     # Static coloring mode
-    payload = [0] * PAYLOAD_SIZE_STATIC_MODE
-    if args.zone < 1 or args.zone > 8:
-        print("Invalid Zone ID entered! Possible values are: 1, 2, 3, 4 from left to right")
-    payload[0] = 1 << (args.zone - 1)
-    payload[1] = args.red
-    payload[2] = args.green
-    payload[3] = args.blue
-    with open(CHARACTER_DEVICE_STATIC, 'wb') as cd:
-        cd.write(bytes(payload))
+    zones = [args.zone]
+    if hasattr(args, 'all_zones') and args.all_zones:
+        zones = [1, 2, 3, 4]
 
-    # Tell WMI To use STATIC coloring
-    # Dynamic coloring mode
+    for zone in zones:
+        if zone < 1 or zone > 4:
+            print("Invalid Zone ID entered! Zone must be 1–4")
+            continue
+
+        # Set color to the selected zone
+        payload = [0] * PAYLOAD_SIZE_STATIC_MODE
+        payload[0] = 1 << (zone - 1)
+        payload[1] = args.red
+        payload[2] = args.green
+        payload[3] = args.blue
+
+        with open(CHARACTER_DEVICE_STATIC, 'wb') as cd:
+            cd.write(bytes(payload))
+
+    # Send general brightness + static mode activation
     payload = [0] * PAYLOAD_SIZE
     payload[2] = args.brightness
     payload[9] = 1
     with open(CHARACTER_DEVICE, 'wb') as cd:
         cd.write(bytes(payload))
+
 
 
 
